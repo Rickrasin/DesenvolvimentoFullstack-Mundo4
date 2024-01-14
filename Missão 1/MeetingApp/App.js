@@ -1,24 +1,19 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
-import CatApp from "./src/components/CatApp";
-import Cafe from "./src/components/Cafe";
-import Cat from "./src/components/Cat";
+import CadastroFornecedores from "./src/Pages/CadastroFornecedores";
+import ListaFornecedores from "./src/Pages/ListaFornecedores";
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Cafe />
-      <CatApp />
-    </View>
+    <NavigationContainer>
+      <Tab.Navigator>
+        <Tab.Screen name="Cadastro" component={CadastroFornecedores} />
+        <Tab.Screen name="Lista" component={ListaFornecedores} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center"
-  }
-});
