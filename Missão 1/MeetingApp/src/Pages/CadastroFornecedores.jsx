@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFornecedores } from "../hooks/FornecedoresProvider";
 
 const CadastroFornecedores = () => {
   const [nome, setNome] = useState("");
@@ -20,47 +20,7 @@ const CadastroFornecedores = () => {
   const [imagem, setImagem] = useState(null);
   const [image, setImage] = useState(null);
 
-  useEffect(() => {
-    // Ao montar o componente, verifica se o AsyncStorage contém fornecedores
-    lerFornecedores();
-  }, []);
-
-  const lerFornecedores = async () => {
-    try {
-      const fornecedores = await AsyncStorage.getItem("fornecedores");
-
-      if (fornecedores !== null) {
-        console.log("Fornecedores existentes:", JSON.parse(fornecedores));
-      } else {
-        console.log("Nenhum fornecedor encontrado no AsyncStorage.");
-      }
-    } catch (error) {
-      console.log("Erro ao ler fornecedores:", error);
-    }
-  };
-
-  const salvarFornecedor = async (novoFornecedor) => {
-    try {
-      // Obtém fornecedores existentes do AsyncStorage
-      const fornecedores = await AsyncStorage.getItem("fornecedores");
-
-      // Se existirem fornecedores, converte para array
-      const fornecedoresArray = fornecedores ? JSON.parse(fornecedores) : [];
-
-      // Adiciona o novo fornecedor ao array
-      fornecedoresArray.push(novoFornecedor);
-
-      // Salva o array atualizado no AsyncStorage
-      await AsyncStorage.setItem(
-        "fornecedores",
-        JSON.stringify(fornecedoresArray)
-      );
-
-      console.log("Fornecedor salvo com sucesso!");
-    } catch (error) {
-      console.log("Erro ao salvar fornecedor:", error);
-    }
-  };
+  const { adicionarFornecedor } = useFornecedores();
 
   const handleCadastro = () => {
     // Lógica para salvar os detalhes do fornecedor
@@ -76,7 +36,7 @@ const CadastroFornecedores = () => {
     console.log("Detalhes do fornecedor:", JSON.stringify(detalhesFornecedor));
 
     // Salva o novo fornecedor no AsyncStorage
-    salvarFornecedor(detalhesFornecedor);
+    adicionarFornecedor(detalhesFornecedor);
   };
 
   const handleChoosePhoto = async () => {

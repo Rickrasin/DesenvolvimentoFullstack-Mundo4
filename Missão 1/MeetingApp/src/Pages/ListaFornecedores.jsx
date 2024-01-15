@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   FlatList,
@@ -11,68 +10,41 @@ import {
   StyleSheet,
   TouchableOpacity
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFornecedores } from "../hooks/FornecedoresProvider";
+import { StatusBar } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 const ListaFornecedores = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [filteredFornecedores, setFilteredFornecedores] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFornecedor, setSelectedFornecedor] = useState(null);
-  const [fornecedores, setFornecedores] = useState([]);
+  const {
+    fornecedores,
+    adicionarFornecedor,
+    editarFornecedor,
+    deletarFornecedor
+  } = useFornecedores();
 
-  const loadFornecedores = async () => {
-    try {
-      const storedFornecedores = await AsyncStorage.getItem("fornecedores");
-      if (storedFornecedores) {
-        setFornecedores(JSON.parse(storedFornecedores));
-      }
-    } catch (error) {
-      console.log("Erro ao carregar fornecedores:", error);
-    }
-  };
-  
   useEffect(() => {
-    loadFornecedores();
-  }, []);
+    handleSearch("");
+  }, [fornecedores]);
 
-  const salvarFornecedor = async (novoFornecedor) => {
-    try {
-      // Obtém fornecedores existentes do AsyncStorage
-      const fornecedores = await AsyncStorage.getItem("fornecedores");
+  const handleSearch = (text) => {
+    const filtered = fornecedores.filter((fornecedor) => {
+      const categoria = fornecedor.categoria
+        ? fornecedor.categoria.toLowerCase()
+        : "";
+      const endereco = fornecedor.endereco
+        ? fornecedor.endereco.toLowerCase()
+        : "";
 
-      // Se existirem fornecedores, converte para array
-      const fornecedoresArray = fornecedores ? JSON.parse(fornecedores) : [];
+      const categoriaMatch = categoria.includes(text.toLowerCase());
+      const enderecoMatch = endereco.includes(text.toLowerCase());
 
-      // Adiciona o novo fornecedor ao array
-      fornecedoresArray.push(novoFornecedor);
+      return categoriaMatch || enderecoMatch;
+    });
 
-      // Salva o array atualizado no AsyncStorage
-      await AsyncStorage.setItem(
-        "fornecedores",
-        JSON.stringify(fornecedoresArray)
-      );
-
-      console.log("Fornecedor salvo com sucesso!");
-    } catch (error) {
-      console.log("Erro ao salvar fornecedor:", error);
-    }
-  };
-
-  const handleSearch = () => {
-    const filtered = fornecedores.filter(
-      (fornecedor) =>
-        fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        fornecedor.categoria.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredFornecedores(filtered);
-  };
-
-  const handleDelete = (id) => {
-    const updatedFornecedores = fornecedores.filter(
-      (fornecedor) => fornecedor.id !== id
-    );
-    setFornecedores(updatedFornecedores);
-    saveFornecedoresToStorage(updatedFornecedores);
+    setFilteredFornecedores(text === "" ? fornecedores : filtered);
   };
 
   const handleEdit = (fornecedor) => {
@@ -81,38 +53,61 @@ const ListaFornecedores = () => {
   };
 
   const handleModalSave = () => {
-    // Lógica para salvar as alterações do fornecedor
-    const updatedFornecedores = fornecedores.map((item) =>
-      item.id === selectedFornecedor.id ? selectedFornecedor : item
-    );
-    setFornecedores(updatedFornecedores);
-    saveFornecedoresToStorage(updatedFornecedores);
-    setModalVisible(false);
-    setSelectedFornecedor(null);
+    if (selectedFornecedor) {
+      editarFornecedor(selectedFornecedor);
+      setModalVisible(false);
+      setSelectedFornecedor(null);
+    } else {
+      adicionarFornecedor({
+        nome: selectedFornecedor?.nome || "",
+        contato: selectedFornecedor?.endereco || "",
+        endereco: selectedFornecedor?.contato || "",
+        categoria: selectedFornecedor?.categoria || "",
+        imagem: selectedFornecedor?.imagem || ""
+      });
+
+      setModalVisible(false);
+    }
+  };
+
+  const handleChoosePhoto = async () => {
+    const options = {
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1
+    };
+
+    let result = await ImagePicker.launchImageLibraryAsync(options);
+
+    console.log(result);
+
+    if (!result.cancelled) {
+      setSelectedFornecedor((prev) => ({ ...prev, imagem: result.uri }));
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <TextInput
         style={styles.input}
         placeholder="Pesquisar por nome ou categoria"
-        value={searchTerm}
-        onChangeText={(text) => setSearchTerm(text)}
+        onChangeText={(text) => handleSearch(text)}
       />
-      <Button title="Buscar" onPress={handleSearch} />
 
       <FlatList
-        data={
-          filteredFornecedores.length > 0 ? filteredFornecedores : fornecedores
-        }
+        data={filteredFornecedores}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.fornecedorItem}>
             <Text style={styles.fornecedorNome}>{item.nome}</Text>
             <Text style={styles.fornecedorDetalhes}>{item.endereco}</Text>
+            <Text style={styles.fornecedorDetalhes}>{item.contato}</Text>
             <Text style={styles.fornecedorDetalhes}>{item.categoria}</Text>
-            {/* Remova ou ajuste conforme necessário */}
-            <Image source={item.imagem} style={styles.fornecedorImagem} />
+            <Image
+              source={{ uri: item.imagem }}
+              style={styles.fornecedorImagem}
+            />
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
@@ -123,7 +118,7 @@ const ListaFornecedores = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteButton}
-                onPress={() => handleDelete(item.id)}
+                onPress={() => deletarFornecedor(item.id)}
               >
                 <Text style={styles.buttonText}>Excluir</Text>
               </TouchableOpacity>
@@ -132,14 +127,11 @@ const ListaFornecedores = () => {
         )}
       />
 
-      {/* Modal de Edição */}
       <Modal
         animationType="slide"
         transparent={false}
         visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-        }}
+        onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Editar Fornecedor</Text>
@@ -161,13 +153,32 @@ const ListaFornecedores = () => {
           />
           <TextInput
             style={styles.modalInput}
+            placeholder="Contato"
+            value={selectedFornecedor?.contato || ""}
+            onChangeText={(text) =>
+              setSelectedFornecedor((prev) => ({ ...prev, contato: text }))
+            }
+          />
+          <TextInput
+            style={styles.modalInput}
             placeholder="Categoria"
             value={selectedFornecedor?.categoria || ""}
             onChangeText={(text) =>
               setSelectedFornecedor((prev) => ({ ...prev, categoria: text }))
             }
           />
-          {/* Adicione mais campos conforme necessário */}
+          <TouchableOpacity
+            style={styles.selectImageButton}
+            onPress={handleChoosePhoto}
+          >
+            <Text style={styles.buttonText}>Selecionar Imagem</Text>
+          </TouchableOpacity>
+          {selectedFornecedor?.imagem && (
+            <Image
+              source={{ uri: selectedFornecedor?.imagem }}
+              style={styles.selectedImage}
+            />
+          )}
           <Button title="Salvar" onPress={handleModalSave} />
           <Button
             title="Cancelar"
@@ -178,13 +189,15 @@ const ListaFornecedores = () => {
           />
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0
   },
   input: {
     height: 40,
@@ -248,6 +261,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 16,
     paddingHorizontal: 8
+  },
+  selectImageButton: {
+    backgroundColor: "#3498db",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10
+  },
+  selectedImage: {
+    width: "100%",
+    height: 200,
+    resizeMode: "cover",
+    marginTop: 10
   }
 });
 
