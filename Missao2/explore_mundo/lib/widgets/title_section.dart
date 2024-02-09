@@ -1,8 +1,13 @@
-// title_section_widget.dart
 import 'package:flutter/material.dart';
 
-class TitleSectionWidget extends StatelessWidget {
-  const TitleSectionWidget({super.key});
+class TitleSection extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const TitleSection({super.key,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,15 +21,15 @@ class TitleSectionWidget extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: const Text(
-                    'Oeschinen Lake Campground',
-                    style: TextStyle(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 Text(
-                  'Kandersteg, Switzerland',
+                  subtitle,
                   style: TextStyle(
                     color: Colors.grey[500],
                   ),
